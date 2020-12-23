@@ -1,0 +1,75 @@
+public class RetrofitHelper {
+    private OkHttpClient mOkHttpClient;
+    private Retrofit mRetrofit;
+    private RequestApi mApiService;
+
+    private RetrofitHelper() {
+        initOkHttp();
+        // initRetrofit("https://62ad4aca72b54c0798ece695b2dcc20b.apig.cn-north-4.huaweicloudapis.com/");
+        initRetrofit("https://b2bb957e4cb44ab6a2b7e6806a0ec997.apig.cn-north-4.huaweicloudapis.com/");
+    }
+
+    /**
+     * 获取单例
+     *
+     * @return RetrofitHelper实例
+     */
+    public static RetrofitHelper getInstance() {
+        return SingletonHolder.instance;
+    }
+
+    private static class SingletonHolder {
+        private static RetrofitHelper instance = new RetrofitHelper();
+    }
+
+    // 初始化OkHttp
+    private void initOkHttp() {
+        OkHttpClient.Builder mBuilder = new OkHttpClient.Builder();
+        // 设置打印
+        mBuilder.addInterceptor(new TokenInterceptor());
+        // 设置超时
+        mBuilder.connectTimeout(30, TimeUnit.SECONDS);
+        mBuilder.readTimeout(30, TimeUnit.SECONDS);
+        mBuilder.writeTimeout(30, TimeUnit.SECONDS);
+        mBuilder.hostnameVerifier(new PhrHostnameVerifier());
+
+        mBuilder.protocols(Collections.singletonList(Protocol.HTTP_1_1));
+        // 错误重连
+        mBuilder.retryOnConnectionFailure(true);
+        mOkHttpClient = mBuilder.build();
+    }
+
+    static class PhrHostnameVerifier implements HostnameVerifier {
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return true;
+        }
+    }
+
+    /**
+     * 初始化
+     *
+     * @param baseUrl 基础的URL
+     */
+    private void initRetrofit(String baseUrl) {
+        Gson gson = new Gson();
+        mRetrofit = new Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .client(mOkHttpClient)
+                .build();
+        mApiService = null;
+    }
+
+    /**
+     * 获取service
+     *
+     * @return ApiService实例
+     */
+    public RequestApi getService() {
+        if (mApiService == null) {
+            mApiService = mRetrofit.create(RequestApi.class);
+        }
+        return mApiService;
+    }
+}
